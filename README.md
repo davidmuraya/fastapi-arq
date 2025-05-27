@@ -54,8 +54,6 @@ uvicorn main:app --reload --port 5000
 arq worker:WorkerSettings
 ```
 
-For Windows users, you may need to ensure your environment supports asyncio event loops (use Python 3.8+).
-
 ### Example: Enqueue an Addition Task
 
 ```bash
