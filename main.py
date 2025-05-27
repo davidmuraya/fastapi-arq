@@ -9,7 +9,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel, HttpUrl
 
 from config import get_settings
-from worker import get_redis_pool
+from redis_pool import get_redis_pool
 
 # Configuration settings
 config = get_settings()
