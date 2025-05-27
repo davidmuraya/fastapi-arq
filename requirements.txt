@@ -1,0 +1,8 @@
+pydantic-settings
+fastapi
+
+uvicorn
+
+sqlmodel
+httpx
+arq
