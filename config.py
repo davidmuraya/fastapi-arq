@@ -11,6 +11,11 @@ class Settings(BaseSettings):
         description="Redis broker in host:port format, e.g. localhost:6379",
     )
 
+    WORKER_QUEUE: str = Field(
+        "fastapi-app-queue-1",
+        description="Redis queue to listen to for jobs",
+    )
+
     # These two will be filled in by our validator
     redis_host: str
     redis_port: int
