@@ -13,7 +13,7 @@ from tasks import add, divide, long_call
 config = get_settings()
 
 # Configure Redis connection
-REDIS_SETTINGS = RedisSettings(host=config.REDIS_HOST, port=config.REDIS_PORT)
+REDIS_SETTINGS = RedisSettings(host=config.redis_host, port=config.redis_port)
 
 
 # ARQ startup and shutdown
@@ -32,6 +32,9 @@ class WorkerSettings:
     functions = [long_call, add, divide]
     on_startup = startup
     on_shutdown = shutdown
+    keep_result_forever = True
+    max_jobs = 100
+    max_tries = 3
     redis_settings = REDIS_SETTINGS
 
 
