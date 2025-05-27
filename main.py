@@ -15,7 +15,7 @@ from worker import get_redis_pool
 config = get_settings()
 
 # Configure Redis connection
-REDIS_SETTINGS = RedisSettings(host=config.REDIS_HOST, port=config.REDIS_PORT)
+REDIS_SETTINGS = RedisSettings(host=config.redis_host, port=config.redis_port)
 
 # FastAPI app
 app = FastAPI(title="FastAPI with ARQ")
@@ -34,9 +34,7 @@ class MathRequest(BaseModel):
 
 # FastAPI endpoints
 @app.post("/tasks/long_call")
-async def enqueue_long_call(
-    request: LongCallRequest, redis: ArqRedis = Depends(get_redis_pool)
-):
+async def enqueue_long_call(request: LongCallRequest, redis: ArqRedis = Depends(get_redis_pool)):
     job = await redis.enqueue_job("long_call", request.url)
     if job is None:
         raise HTTPException(status_code=500, detail="Failed to enqueue job")
@@ -52,9 +50,7 @@ async def enqueue_add(request: MathRequest, redis: ArqRedis = Depends(get_redis_
 
 
 @app.post("/tasks/divide")
-async def enqueue_divide(
-    request: MathRequest, redis: ArqRedis = Depends(get_redis_pool)
-):
+async def enqueue_divide(request: MathRequest, redis: ArqRedis = Depends(get_redis_pool)):
     job = await redis.enqueue_job("divide", request.x, request.y, request.username)
     if job is None:
         raise HTTPException(status_code=500, detail="Failed to enqueue job")
