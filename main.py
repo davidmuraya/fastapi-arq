@@ -43,11 +43,12 @@ class JobStatusResponse(BaseModel):
     function: Optional[str] = None
     args: Optional[str] = None
     error: Optional[str] = None
+    attempts: int = 0
 
 
 class JobEnqueueResponse(BaseModel):
     job_id: str
-    message: str = "Job successfully queued"
+    message: str = "Job successfully queued."
     success: Optional[bool] = True
 
 
@@ -97,38 +98,51 @@ async def get_job_status(job_id: str, redis: ArqRedis = Depends(get_redis_pool))
     # Initialize Job instance with the job_id and redis connection
     job = Job(job_id, redis)
 
-    # Get job status
-    status = await job.status()
+    start_time = None
 
     # Get job info and result_info
     job_info = await job.info()
 
-    job_result_info = await job.result_info()
-
-    print(f"{job_info=}, {job_result_info=}, {status=}")
-
     if job_info is None:
         raise HTTPException(status_code=404, detail="Job not found")
+
+    # Get job status
+    status = await job.status()
+
+    # Set enqueue_time as start_time if available
+    start_time = getattr(job_info, "enqueue_time", None)
 
     # Prepare data for response model
     data = {
         "job_id": job_id,
         "status": status.value,
-        "success": job_info.success,
+        "success": getattr(job_info, "success", False),  # Fix: default to False if not present
         "result": {},
         "start_time": None,
         "finish_time": None,
         "username": None,
-        "function": job_info.function,
-        "args": str(job_info.args),
+        "function": getattr(job_info, "function", None),
+        "args": str(getattr(job_info, "args", "")),
         "error": None,
+        "attempts": getattr(job_info, "job_try", 0),
     }
 
     # Extract timestamps
-    if job_info.start_time:
-        data["start_time"] = job_info.start_time.isoformat()
-    if job_info.finish_time:
-        data["finish_time"] = job_info.finish_time.isoformat()
+    if status.value == "in_progress":
+        # Use enqueue_time as start_time if available
+        data["start_time"] = start_time.isoformat() if start_time else None
+
+    else:
+        start_time = getattr(job_info, "start_time", None)
+        data["start_time"] = start_time.isoformat() if start_time else None
+
+    finish_time = getattr(job_info, "finish_time", None)
+    data["finish_time"] = finish_time.isoformat() if finish_time else None
+
+    # if a start_time is present, and the status is not_found, set status to queued
+    # this is to handle a rare case where the job has been queued but arq is not running
+    if start_time and status.value == "not_found":
+        data["status"] = "queued"
 
     # Extract username from kwargs if present
     username = None
