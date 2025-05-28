@@ -26,7 +26,7 @@ async def get_redis_pool() -> AsyncGenerator[ArqRedis, None]:
         )
     except (RedisTimeoutError, RedisConnectionError) as exc:
         # You can log.exc_info() here if you like, or do retry logic
-        raise HTTPException(status_code=503, detail="Could not connect to Redis – please try again later.") from exc
+        raise HTTPException(status_code=503, detail="Could not connect to Redis - please try again later.") from exc
 
     try:
         yield redis
