@@ -36,8 +36,8 @@ Ensure you have Redis installed and running on your machine.
 Create a `.env` file in the root directory and add the following lines:
 
 ```bash
-REDIS_HOST=localhost
-REDIS_PORT=6379
+REDIS_BROKER=localhost:6379
+WORKER_QUEUE=app-LyiRY47QTM
 ```
 
 ## Usage
