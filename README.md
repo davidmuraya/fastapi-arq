@@ -42,14 +42,15 @@ REDIS_PORT=6379
 
 ## Usage
 
-### Running the API
+### Running the project
+To run the FastAPI application with ARQ worker, follow these steps:
 
 ```bash
 uvicorn main:app --reload --port 5000
 ```
 
 ### Running the ARQ Worker
-
+To start the ARQ worker that processes background tasks, run the following command in a separate terminal:
 ```bash
 arq worker:WorkerSettings
 ```
@@ -70,12 +71,15 @@ curl "http://localhost:5000/jobs/<job_id>"
 
 ```
 fastapi-arq/
-├── main.py                 # FastAPI app and endpoints
 ├── config.py               # Environment configuration
+├── main.py                 # FastAPI app and endpoints
+├── models.py               # Pydantic models for requests and responses
+├── redis_pool.py           # Redis connection pool dependency
+├── requirements.txt        # Python dependencies
 ├── tasks.py                # ARQ task definitions
 ├── worker.py               # ARQ worker configuration
-├── requirements.txt
-└── README.md
+├── .env                    # Environment variables (not committed)
+└── README.md               # Project documentation
 ```
 
 ## Configuration
