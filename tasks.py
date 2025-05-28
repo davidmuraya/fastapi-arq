@@ -32,9 +32,7 @@ async def long_call(ctx, url: str, task_id: str, max_tries: int = 3):
         result = response.json()
 
         # Store result in Redis
-        await redis.hset(
-            f"task:{task_id}", mapping={"status": "SUCCESS", "result": str(result)}
-        )
+        await redis.hset(f"task:{task_id}", mapping={"status": "SUCCESS", "result": str(result)})
         return result
     except RequestError as exc:
         logging.error(f"Request error for {url}: {exc}")
@@ -52,9 +50,7 @@ async def long_call(ctx, url: str, task_id: str, max_tries: int = 3):
         raise
     except HTTPStatusError as exc:
         logging.error(f"HTTP status error for {url}: {exc}")
-        await redis.hset(
-            f"task:{task_id}", mapping={"status": "FAILURE", "error": str(exc)}
-        )
+        await redis.hset(f"task:{task_id}", mapping={"status": "FAILURE", "error": str(exc)})
         raise
 
 
@@ -70,7 +66,6 @@ async def add(ctx, x: float, y: float, username: Optional[str] = None):
     result = x + y
 
     # Update progress
-
     print("Step 2: Finished addition")
     await asyncio.sleep(15)
 
@@ -83,70 +78,17 @@ async def add(ctx, x: float, y: float, username: Optional[str] = None):
     return {"result": result, "username": username}
 
 
-async def divide(
-    ctx,
-    x: float,
-    y: float,
-    task_id: str,
-    username: Optional[str] = None,
-    param1: Optional[str] = None,
-    param2: Optional[str] = None,
-    max_tries: int = 3,
-):
+async def divide(ctx, x: float, y: float, username: Optional[str] = None):
     """
     Task to perform division with retries.
     Stores progress and results in Redis.
     """
-    redis = ctx["redis"]
-    tries = ctx.get("tries", 1)
-
-    # Store initial metadata
-    await redis.hset(
-        f"task:{task_id}",
-        mapping={
-            "status": "PROGRESS",
-            "username": username or "",
-            "param1": param1 or "",
-            "param2": param2 or "",
-            "tries": str(tries),
-            "max_tries": str(max_tries),
-        },
-    )
-    print(f"Dividing {x} and {y}")
-
+    print("Step 1: Starting division")
     try:
         result = x / y
-        # Store result
-        await redis.hset(
-            f"task:{task_id}",
-            mapping={
-                "status": "SUCCESS",
-                "result": str(result),
-                "username": username or "",
-            },
-        )
+
         return {"result": result, "username": username}
     except Exception as exc:
-        logging.error(f"Error in divide: {exc}")
-        if tries >= max_tries:
-            await redis.hset(
-                f"task:{task_id}",
-                mapping={
-                    "status": "FAILURE",
-                    "error": f"Max retries exceeded: {str(exc)}",
-                },
-            )
-            raise
-        # Re-enqueue with incremented tries
-        await redis.enqueue_job(
-            "divide",
-            x,
-            y,
-            task_id,
-            username,
-            param1,
-            param2,
-            max_tries,
-            _tries=tries + 1,
-        )
+        logging.error(f"Error in divide: {exc!r}")
+        # Let ARQ handle retries by raising the exception
         raise
