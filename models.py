@@ -27,7 +27,7 @@ class JobStatusResponse(BaseModel):
     function: Optional[str] = None
     args: Optional[str] = None
     error: Optional[str] = None
-    attempts: int = 0
+    attempts: Optional[int] = 0
 
 
 class JobEnqueueResponse(BaseModel):
