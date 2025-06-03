@@ -1,14 +1,18 @@
 # app.py
 
-import asyncio
-
 from arq.connections import ArqRedis, RedisSettings
 from arq.jobs import Job
 from fastapi import Depends, FastAPI, HTTPException
+from sqlmodel import Session
 
 from config import get_settings
+from database.connection import get_db
 from models import JobEnqueueResponse, JobStatusResponse, LongCallRequest, MathRequest
 from redis_pool import get_redis_pool
+from schemas.models import JobHistoryRead  # Import for type hinting if needed, though get_job_history returns it
+from utils.events import on_shutdown, on_start_up
+from utils.job_info import process_job_info
+from utils.job_info_crud import get_job_history
 
 # Configuration settings
 config = get_settings()
@@ -17,7 +21,12 @@ config = get_settings()
 REDIS_SETTINGS = RedisSettings(host=config.redis_host, port=config.redis_port)
 
 # FastAPI app
-app = FastAPI(title="FastAPI with ARQ")
+app = FastAPI(
+    title="FastAPI with ARQ",
+    version="1.0.0",
+    on_startup=[on_start_up],
+    on_shutdown=[on_shutdown],
+)
 
 
 # FastAPI endpoints
@@ -46,89 +55,69 @@ async def enqueue_divide(request: MathRequest, redis: ArqRedis = Depends(get_red
 
 
 @app.get("/jobs/{job_id}", response_model=JobStatusResponse)
-async def get_job_status(job_id: str, redis: ArqRedis = Depends(get_redis_pool)) -> JobStatusResponse:
+async def get_job_status(job_id: str, db: Session = Depends(get_db), redis: ArqRedis = Depends(get_redis_pool)) -> JobStatusResponse:
     """
     Retrieve the status and details of a background job by its job_id.
+    It first checks Redis, and if not found, checks the job history database.
 
     Args:
         job_id (str): The unique identifier of the job.
+        db (Session): Database session dependency.
+        redis (ArqRedis): ARQ Redis connection dependency.
 
     Returns:
         JobStatusResponse: The status and metadata of the job.
 
-    Job status values:
+    Raises:
+        HTTPException: 404 if the job is not found in Redis or the database.
+
+    Job status values from ARQ (Redis):
         - deferred: Job is in the queue, but the time it should be run has not yet been reached.
         - queued: Job is in the queue, and the time it should run has been reached.
         - in_progress: Job is currently being processed.
         - complete: Job has finished processing and the result is available.
         - not_found: Job was not found in the queue or result store.
+    Job status values from Database (JobHistory):
+        - Typically 'complete' or 'failed'.
     """
-    # Initialize Job instance with the job_id and redis connection
-    job = Job(job_id, redis)
 
-    start_time = None
+    # Initialize ARQ Job instance
+    arq_job = Job(job_id, redis)
 
-    # Get job info and result_info
-    job_info = await job.info()
+    # Try to get job info from ARQ/Redis
+    job_info_from_redis = await process_job_info(job=arq_job)
 
-    if job_info is None:
-        raise HTTPException(status_code=404, detail="Job not found")
-
-    # Get job status
-    status = await job.status()
-
-    # Set enqueue_time as start_time if available
-    start_time = getattr(job_info, "enqueue_time", None)
-
-    # Prepare data for response model
-    data = {
-        "job_id": job_id,
-        "status": status.value,
-        "success": getattr(job_info, "success", False),  # Fix: default to False if not present
-        "result": {},
-        "start_time": None,
-        "finish_time": None,
-        "username": None,
-        "function": getattr(job_info, "function", None),
-        "args": str(getattr(job_info, "args", "")),
-        "error": None,
-        "attempts": getattr(job_info, "job_try", 0),
-    }
-
-    # Extract timestamps
-    if status.value == "in_progress":
-        # Use enqueue_time as start_time if available
-        data["start_time"] = start_time.isoformat() if start_time else None
-
+    if job_info_from_redis:
+        # If found in Redis, return that information
+        print(f"Job {job_id} found in Redis")
+        # process_job_info already returns JobStatusResponse
+        return job_info_from_redis
     else:
-        start_time = getattr(job_info, "start_time", None)
-        data["start_time"] = start_time.isoformat() if start_time else None
+        # If not found in Redis, check the database
+        job_history_from_db = get_job_history(db=db, job_id=job_id)
 
-    finish_time = getattr(job_info, "finish_time", None)
-    data["finish_time"] = finish_time.isoformat() if finish_time else None
+        if job_history_from_db:
+            # If found in the database, adapt JobHistoryRead to JobStatusResponse
+            # Note: JobHistoryRead stores datetimes, JobStatusResponse expects ISO strings
+            start_time_iso = job_history_from_db.start_time.isoformat() if job_history_from_db.start_time else None
+            finish_time_iso = job_history_from_db.finish_time.isoformat() if job_history_from_db.finish_time else None
 
-    # if a start_time is present, and the status is not_found, set status to queued
-    # this is to handle a rare case where the job has been queued but arq is not running
-    if start_time and status.value == "not_found":
-        data["status"] = "queued"
-
-    # Extract username from kwargs if present
-    username = None
-    if job_info.kwargs and isinstance(job_info.kwargs, dict):
-        username = job_info.kwargs.get("username")
-    data["username"] = username
-
-    # If job is complete, fetch result or error
-    if status.value == "complete":
-        try:
-            result = await job.result(timeout=5)
-            data["result"] = result if isinstance(result, dict) else {"value": result}
-        except asyncio.TimeoutError:
-            data["error"] = "TimeoutError: Job took longer than 5 seconds to fetch result"
-        except Exception as e:
-            data["error"] = str(e)
-
-    return JobStatusResponse(**data)
+            return JobStatusResponse(
+                job_id=job_history_from_db.job_id,
+                status=job_history_from_db.status or "Unknown",  # Provide a default if status is None
+                success=job_history_from_db.success,
+                result=job_history_from_db.result_payload or {},  # Ensure result is a dict
+                start_time=start_time_iso,
+                finish_time=finish_time_iso,
+                username=job_history_from_db.username,
+                function=job_history_from_db.function_name,
+                args=job_history_from_db.args_payload,
+                error=job_history_from_db.error_message,
+                attempts=job_history_from_db.attempts,
+            )
+        else:
+            # If not found in Redis or the database, raise 404
+            raise HTTPException(status_code=404, detail=f"Job with ID '{job_id}' not found in Redis or database.")
 
 
 # Run the application
