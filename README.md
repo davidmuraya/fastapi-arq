@@ -42,7 +42,8 @@ Create a `.env` file in the root directory and add the following lines:
 
 ```bash
 REDIS_BROKER=localhost:6379
-WORKER_QUEUE=app-LyiRY47QTM
+WORKER_QUEUE=app-LyiRY47QTMd
+JOBS_DB=database/jobs.db
 ```
 
 ## Usage
