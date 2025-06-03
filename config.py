@@ -16,6 +16,11 @@ class Settings(BaseSettings):
         description="Redis queue to listen to for jobs",
     )
 
+    JOBS_DB: str = Field(
+        "database/jobs.db",
+        description="SQLAlchemy database URL for jobs",
+    )
+
     # These two will be filled in by our validator
     redis_host: str
     redis_port: int
