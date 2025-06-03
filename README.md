@@ -77,15 +77,29 @@ curl "http://localhost:5000/jobs/<job_id>"
 
 ```
 fastapi-arq/
-├── config.py               # Environment configuration
-├── main.py                 # FastAPI app and endpoints
-├── models.py               # Pydantic models for requests and responses
-├── redis_pool.py           # Redis connection pool dependency
-├── requirements.txt        # Python dependencies
-├── tasks.py                # ARQ task definitions
-├── worker.py               # ARQ worker configuration
 ├── .env                    # Environment variables (not committed)
-└── README.md               # Project documentation
+├── .gitignore              # Specifies intentionally untracked files that Git should ignore
+├── config.py               # Environment configuration loading
+├── database/
+│   ├── connection.py       # Database connection setup (engine, session provider)
+│   ├── __init__.py
+│   └── models.py           # SQLModel database table definitions (e.g., JobHistory)
+├── main.py                 # FastAPI application, API endpoints
+├── models.py               # Pydantic models for API requests and responses (e.g., JobStatusResponse)
+├── README.md               # This file: Project documentation
+├── redis_pool.py           # ARQ Redis connection pool dependency
+├── requirements.txt        # Python package dependencies
+├── schemas/
+│   ├── __init__.py
+│   └── models.py           # Pydantic schemas for data validation (e.g., JobHistoryCreate, JobHistoryRead)
+├── tasks.py                # ARQ task definitions (e.g., add, divide)
+├── utils/
+│   ├── date_parser.py      # Utility for parsing datetime strings
+│   ├── events.py           # FastAPI startup/shutdown event handlers
+│   ├── __init__.py
+│   ├── job_info.py         # Utility for processing ARQ job information
+│   └── job_info_crud.py    # CRUD operations for the JobHistory database table
+└── worker.py               # ARQ worker settings and configuration
 ```
 
 ## Configuration
