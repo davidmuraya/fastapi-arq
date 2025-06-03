@@ -9,3 +9,7 @@
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
+
+
+database/jobs.db
+database/jobs.db-journal
