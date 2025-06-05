@@ -9,14 +9,20 @@ This project uses ARQ instead of Celery because the task functions are asynchron
 
 ## Features
 
-- Asynchronous background task processing with ARQ
-- FastAPI endpoints to enqueue and monitor tasks
-- Integration with Redis for robust, production-grade queue management
-- Example producer/consumer patterns (e.g., addition, division tasks, HTTP calls)
-- Task status and result retrieval via API
-- Modular codebase with clear separation of API, tasks, and configuration
-- Optional in-memory queue support for development/testing
-- Windows and Linux compatibility
+- Asynchronous background task processing with ARQ for reliable job execution.
+- FastAPI endpoints to enqueue tasks (`/tasks/add`, `/tasks/divide`, `/tasks/long_call`, `/tasks/scheduled_add`) and retrieve job status (`/jobs/{job_id}`).
+- Integration with Redis for robust, production-grade queue management.
+- Example producer/consumer patterns:
+    - `add`: Performs addition of two numbers.
+    - `divide`: Performs division of two numbers.
+    - `long_call`: Executes an HTTP GET request with retries.
+    - `scheduled_add`: Performs addition at a scheduled time.
+- Task status and result retrieval via API, checking both Redis and a persistent SQLite database for job history.
+- Modular codebase with clear separation of API, tasks, database models, and configuration.
+- Utilizes SQLModel for database interactions and Pydantic for data validation.
+- Includes startup and shutdown events for managing resources like HTTP sessions.
+- Demonstrates how to schedule tasks to run at a specific time using `defer_until`.
+- Implements a database model (`JobHistory`) to persist job details for auditing and monitoring.
 
 ## Requirements
 
