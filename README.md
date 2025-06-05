@@ -20,7 +20,7 @@ This project uses ARQ instead of Celery because the task functions are asynchron
 - Task status and result retrieval via API, checking both Redis and a persistent SQLite database for job history.
 - Modular codebase with clear separation of API, tasks, database models, and configuration.
 - Utilizes SQLModel for database interactions and Pydantic for data validation.
-- Includes startup and shutdown events for managing resources like HTTP sessions.
+- Includes startup and shutdown events.
 - Demonstrates how to schedule tasks to run at a specific time using `defer_until`.
 - Implements a database model (`JobHistory`) to persist job details for auditing and monitoring.
 
