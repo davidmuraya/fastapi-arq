@@ -78,6 +78,30 @@ async def add(ctx, x: float, y: float, username: Optional[str] = None):
     return {"result": result, "username": username}
 
 
+async def scheduled_add(ctx, x: float, y: float, username: Optional[str] = None):
+    """
+    Task to perform addition with simulated long-running steps.
+    Stores progress and results in Redis.
+    """
+
+    print("Step 1: Starting addition")
+    await asyncio.sleep(15)
+
+    result = x + y
+
+    # Update progress
+    print("Step 2: Finished addition")
+    await asyncio.sleep(15)
+
+    # Update progress
+
+    print("Step 3: Returning result")
+    await asyncio.sleep(10)
+
+    print(f"Result: {result}")
+    return {"result": result, "username": username}
+
+
 async def divide(ctx, x: float, y: float, username: Optional[str] = None):
     """
     Task to perform division with retries.
