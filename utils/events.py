@@ -9,7 +9,4 @@ async def on_start_up() -> None:
 
 
 async def on_shutdown() -> None:
-    """
-    Function to close the http client.
-    """
     pass
