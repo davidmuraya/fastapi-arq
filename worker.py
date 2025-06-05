@@ -8,7 +8,7 @@ from httpx import AsyncClient
 from config import get_settings
 from database.connection import get_db
 from schemas.models import JobHistoryCreate
-from tasks import add, divide, long_call
+from tasks import add, divide, long_call, scheduled_add
 from utils.date_parser import parse_datetime_str
 from utils.job_info import process_job_info
 from utils.job_info_crud import create_job_history
@@ -112,7 +112,7 @@ async def save_job_history_to_db(ctx: dict):
 
 # Worker settings for ARQ
 class WorkerSettings:
-    functions = [long_call, add, divide]
+    functions = [long_call, add, divide, scheduled_add]
     on_startup = startup
     on_shutdown = shutdown
     after_job_end = save_job_history_to_db
