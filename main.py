@@ -1,5 +1,7 @@
 # app.py
 
+from datetime import datetime
+
 from arq.connections import ArqRedis, RedisSettings
 from arq.jobs import Job
 from fastapi import Depends, FastAPI, HTTPException
@@ -41,6 +43,17 @@ async def enqueue_long_call(request: LongCallRequest, redis: ArqRedis = Depends(
 @app.post("/tasks/add", response_model=JobEnqueueResponse)
 async def enqueue_add(request: MathRequest, redis: ArqRedis = Depends(get_redis_pool)):
     job = await redis.enqueue_job("add", request.x, request.y, request.username)
+    if job is None:
+        raise HTTPException(status_code=500, detail="Failed to enqueue job")
+    return JobEnqueueResponse(job_id=job.job_id)
+
+
+@app.post("/tasks/scheduled_add", response_model=JobEnqueueResponse)
+async def enqueue_scheduled_add(hour: int, min: int, request: MathRequest, redis: ArqRedis = Depends(get_redis_pool)):
+    """Enqueue a job to perform addition at a scheduled time."""
+    target_time = datetime.now().replace(hour=hour, minute=min, second=15, microsecond=0)
+
+    job = await redis.enqueue_job("scheduled_add", request.x, request.y, request.username, _defer_until=target_time)
     if job is None:
         raise HTTPException(status_code=500, detail="Failed to enqueue job")
     return JobEnqueueResponse(job_id=job.job_id)
@@ -117,7 +130,7 @@ async def get_job_status(job_id: str, db: Session = Depends(get_db), redis: ArqR
             )
         else:
             # If not found in Redis or the database, raise 404
-            raise HTTPException(status_code=404, detail=f"Job with ID '{job_id}' not found in Redis or database.")
+            raise HTTPException(status_code=404, detail=f"Job ID '{job_id}' was not found.")
 
 
 # Run the application
