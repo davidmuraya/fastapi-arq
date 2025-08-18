@@ -6,7 +6,6 @@ A production-ready FastAPI project for managing background task queues using [AR
 
 This project uses ARQ instead of Celery because the task functions are asynchronous (`async def`). ARQ is designed for asyncio-based Python code and integrates seamlessly with async frameworks like FastAPI. In contrast, using Celery with async tasks requires additional setup and third-party libraries (such as `aio-celery`), making ARQ a simpler and more natural fit for async workloads.
 
-
 ## Features
 
 - Asynchronous background task processing with ARQ for reliable job execution.
@@ -55,6 +54,7 @@ JOBS_DB=database/jobs.db
 ## Usage
 
 ### Running the project
+
 To run the FastAPI application with ARQ worker, follow these steps:
 
 ```bash
@@ -62,7 +62,9 @@ uvicorn main:app --reload --port 5000
 ```
 
 ### Running the ARQ Worker
+
 To start the ARQ worker that processes background tasks, run the following command in a separate terminal:
+
 ```bash
 arq worker:WorkerSettings
 ```
@@ -81,7 +83,7 @@ curl "http://localhost:5000/jobs/<job_id>"
 
 ## Project Structure
 
-```
+```plaintext
 fastapi-arq/
 ├── .env                    # Environment variables (not committed)
 ├── .gitignore              # Specifies intentionally untracked files that Git should ignore
@@ -112,8 +114,15 @@ fastapi-arq/
 
 - Configure queue backend and worker settings in `worker.py` and via environment variables (`.env` file).
 
+## External Links
+
+- [ARQ Documentation](https://arq-docs.helpmanual.io/)
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [SQLModel Documentation](https://sqlmodel.tiangolo.com/)
+- [Pydantic Documentation](https://docs.pydantic.dev/)
+- [Redis Documentation](https://redis.io/)
+- [Uvicorn Documentation](https://www.uvicorn.org/)
+
 ## License
 
-MIT License
-
----
+MIT
