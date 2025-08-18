@@ -44,6 +44,6 @@ class JobHistory(SQLModel, table=True):
 
 def configure():
     """
-    Create all tables and apply seed data.
+    Create all tables.
     """
     SQLModel.metadata.create_all(bind=engine)
